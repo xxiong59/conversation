@@ -8,16 +8,17 @@ from google import genai
 from google.genai import types
 import whisper
 import time
-from TTS.api import TTS
+# from TTS.api import TTS
 from fastapi.staticfiles import StaticFiles
 import os
 import base64
 import uuid
+import google.cloud.texttospeech as tts
 
 # Initialize FastAPI app
 app = FastAPI(title="Simple API", description="A simple REST API using FastAPI")
 
-tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=False)
+# tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=False)
 
 # 获取当前文件的目录
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +31,7 @@ os.makedirs(audio_dir, exist_ok=True)
 # 挂载静态文件夹
 app.mount("/audio", StaticFiles(directory=audio_dir), name="audio")
 
-client = genai.Client(api_key="AIzaSyBZOeQvN2P8C_mv9u4xFqR-kdGuk0FPT4M")
+client = genai.Client(api_key="AIzaSyAIGAYzEwQYkX45zOsdee9PnB51JRBsLno")
 
 chat = client.chats.create(
      model="gemini-2.0-flash",
@@ -85,7 +86,8 @@ async def getText(request: TextRequest):
     output_path = os.path.join(audio_dir, file_name)
         
      # 使用TTS生成音频
-    tts.tts_to_file(text=text_response, file_path=output_path)    
+    # tts.tts_to_file(text=text_response, file_path=output_path)    
+    await text_to_wav(output_path, text_response)
 
     with open(output_path, 'rb') as audio_file:
         audio_data = audio_file.read()
@@ -140,7 +142,8 @@ async def getAudio(request: AudioRequest):
         
      # 使用TTS生成音频
     # tts.tts_to_file(text=text_response, file_path=output_path)
-    await safe_tts_to_file(tts, text_response, file_path=output_path)
+    # await safe_tts_to_file(tts, text_response, file_path=output_path)
+    await text_to_wav(output_path, text_response)
 
     with open(output_path, 'rb') as audio_file:
         audio_data = audio_file.read()
@@ -194,7 +197,8 @@ async def getVideo(request: VideoRequest):
         
      # 使用TTS生成音频
     # tts.tts_to_file(text=text_response, file_path=output_path)
-    await safe_tts_to_file(tts, text_response, file_path=output_path)
+    # await safe_tts_to_file(tts, text_response, file_path=output_path)
+    await text_to_wav(output_path, text_response)
 
     with open(output_path, 'rb') as audio_file:
         audio_data = audio_file.read()
@@ -271,6 +275,26 @@ async def safe_tts_to_file(tts, text, file_path):
         # ... alternative TTS method ...
     else:
         tts.tts_to_file(text=text, file_path=file_path)
+
+
+async def text_to_wav(filename: str, text: str):
+    language_code = "-".join("en-US-Studio-O".split("-")[:2])
+    text_input = tts.SynthesisInput(text=text)
+    voice_params = tts.VoiceSelectionParams(
+        language_code=language_code, name="en-US-Studio-O"
+    )
+    audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
+
+    client = tts.TextToSpeechClient()
+    response = client.synthesize_speech(
+        input=text_input,
+        voice=voice_params,
+        audio_config=audio_config,
+    )
+
+    with open(filename, "wb") as out:
+        out.write(response.audio_content)
+        print(f'Generated speech saved to "{filename}"')
 
 
 

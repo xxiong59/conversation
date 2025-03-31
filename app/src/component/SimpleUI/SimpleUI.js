@@ -57,7 +57,7 @@ const SimpleInterface = () => {
       setTimeout(() => {
         console.log("wait get record audio");
       }, 1000);
-      const filename = `a_xxiong59__record__video_test`;
+      const filename = `misty_video`;
       const base64 = await misty?.getRecordVideo(filename);
       const audio = await sendVideo2AI(base64);
       const timestamp = Date.now();
@@ -65,7 +65,7 @@ const SimpleInterface = () => {
       await misty?.uploadAudio(audio, filename2);
       await misty?.playAudio(filename2);
     } else {
-      const filename = `a_xxiong59__record__video_test`;
+      const filename = `misty_video`;
       await misty?.startRecordVideo(filename, false, 60, 1920, 1080)
     }
     setIsHandlingVideo(!isHandlingVideo)
